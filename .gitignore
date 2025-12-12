@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Virtual environments
+venv/
+.env/
+
+# Data (large files)
+data/raw_images/
+data/raw/
+data/full/
+datasets/
+*.tfrecord
+
+# Kaggle outputs and large artifacts
+artifacts/
+experiments/
+checkpoints/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# DVC cache
+.dvc/cache/
+
+# Model weights
+*.h5
+*.ckpt
+*.pth
+*.pt
