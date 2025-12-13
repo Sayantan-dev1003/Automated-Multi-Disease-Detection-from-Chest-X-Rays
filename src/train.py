@@ -9,6 +9,8 @@ import json
 from pathlib import Path
 import logging
 import tensorflow as tf
+from tensorflow.keras import mixed_precision
+mixed_precision.set_global_policy("mixed_float16")
 import os
 import time
 from data_pipeline import build_dataset

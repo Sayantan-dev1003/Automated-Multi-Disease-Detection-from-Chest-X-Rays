@@ -80,8 +80,7 @@ def build_dataset(manifest_csv, images_root, batch_size=16, image_size=(224, 224
     ds = ds.map(_load, num_parallel_calls=tf.data.AUTOTUNE)
     if repeat:
         ds = ds.repeat()
-    ds = ds.batch(batch_size)
-    ds = ds.prefetch(tf.data.AUTOTUNE)
+    ds = ds.cache().batch(batch_size).prefetch(tf.data.AUTOTUNE)
     # return dataset and some meta info
     meta = {"num_examples": len(image_paths), "num_classes": num_classes, "label_names": label_names}
     return ds, meta
