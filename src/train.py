@@ -3,20 +3,23 @@
 src/train.py
 DenseNet121 training for Chest X-ray multi-label classification
 """
+import os
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+import warnings
+warnings.filterwarnings("ignore")
 
 import argparse
 import json
 from pathlib import Path
 import logging
 import tensorflow as tf
+tf.get_logger().setLevel("ERROR")
 from tensorflow.keras import mixed_precision
 mixed_precision.set_global_policy("mixed_float16")
-import os
 import time
 from data_pipeline import build_dataset
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
-
 
 def build_densenet121(input_shape, num_classes, fine_tune=False):
     base_model = tf.keras.applications.DenseNet121(
@@ -45,7 +48,6 @@ def build_densenet121(input_shape, num_classes, fine_tune=False):
     model = tf.keras.Model(inputs, outputs)
     return model
 
-
 def classification_metrics():
     return [
         tf.keras.metrics.BinaryAccuracy(name="accuracy"),
@@ -54,7 +56,6 @@ def classification_metrics():
         tf.keras.metrics.AUC(name="auc_roc", curve="ROC"),
         tf.keras.metrics.AUC(name="auc_pr", curve="PR"),
     ]
-
 
 def save_run_metadata(out_dir, args, extra=None):
     meta = {
@@ -68,7 +69,6 @@ def save_run_metadata(out_dir, args, extra=None):
 
     with open(out_dir / "run_metadata.json", "w") as f:
         json.dump(meta, f, indent=2)
-
 
 def main(args):
     out_dir = Path(args.output_dir)
