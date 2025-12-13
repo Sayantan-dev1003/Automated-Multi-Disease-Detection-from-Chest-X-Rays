@@ -40,12 +40,16 @@ def main(args):
 
     # -------- build image filename mapping --------
     logging.info("Scanning image directory: %s", images_root)
-    image_files = {p.name for p in images_root.rglob("*") if p.is_file()}
-    logging.info("Found %d image files", len(image_files))
+    image_map = {}
+    for p in images_root.rglob("*.png"):
+        # path relative to images_root parent
+        rel_path = p.relative_to(images_root.parent)
+        image_map[p.name] = str(rel_path)
+    logging.info("Found %d image files", len(image_map))
 
     # -------- filter rows with existing images --------
     df["image_name"] = df["Image Index"].astype(str)
-    df = df[df["image_name"].isin(image_files)].copy()
+    df = df[df["image_name"].isin(image_map.keys())].copy()
 
     if len(df) == 0:
         raise RuntimeError("No images from CSV were found in images_root")
@@ -54,7 +58,7 @@ def main(args):
 
     # -------- build manifest --------
     manifest = pd.DataFrame({
-        "image_path": df["image_name"].apply(lambda x: f"images/{x}"),
+        "image_path": df["image_name"].apply(lambda x: image_map[x]),
         "labels": df["Finding Labels"].fillna("").astype(str)
     })
 
