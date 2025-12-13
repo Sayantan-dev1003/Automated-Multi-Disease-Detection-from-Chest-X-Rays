@@ -113,6 +113,7 @@ def main(args):
         monitor="val_auc_roc",
         mode="max",
         save_best_only=True,
+        save_weights_only=True,
         verbose=1
     )
 
