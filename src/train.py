@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 src/train.py
-Keras training script that consumes CSV manifests created earlier.
+DenseNet121 training for Chest X-ray multi-label classification
 """
 
 import argparse
@@ -16,33 +16,35 @@ from data_pipeline import build_dataset
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
 
-def build_simple_cnn(input_shape=(224, 224, 1), num_classes=1):
+def build_densenet121(input_shape, num_classes, fine_tune=False):
+    base_model = tf.keras.applications.DenseNet121(
+        weights="imagenet",
+        include_top=False,
+        input_shape=input_shape
+    )
+
+    if fine_tune:
+        base_model.trainable = True
+        # Freeze early layers, fine-tune last blocks only
+        for layer in base_model.layers[:-50]:
+            layer.trainable = False
+    else:
+        base_model.trainable = False
+
     inputs = tf.keras.Input(shape=input_shape)
-
-    x = tf.keras.layers.Conv2D(16, 3, activation="relu", padding="same")(inputs)
-    x = tf.keras.layers.MaxPool2D()(x)
-
-    x = tf.keras.layers.Conv2D(32, 3, activation="relu", padding="same")(x)
-    x = tf.keras.layers.MaxPool2D()(x)
-
+    x = tf.keras.applications.densenet.preprocess_input(inputs)
+    x = base_model(x, training=False)
     x = tf.keras.layers.GlobalAveragePooling2D()(x)
-    x = tf.keras.layers.Dense(128, activation="relu")(x)
+    x = tf.keras.layers.Dense(512, activation="relu")(x)
+    x = tf.keras.layers.Dropout(0.4)(x)
 
-    outputs = tf.keras.layers.Dense(
-        num_classes if num_classes > 1 else 1,
-        activation="sigmoid"
-    )(x)
+    outputs = tf.keras.layers.Dense(num_classes, activation="sigmoid")(x)
 
     model = tf.keras.Model(inputs, outputs)
-    loss = "binary_crossentropy"
-
-    return model, loss
+    return model
 
 
 def classification_metrics():
-    """
-    Full classification metrics for binary + multi-label tasks
-    """
     return [
         tf.keras.metrics.BinaryAccuracy(name="accuracy"),
         tf.keras.metrics.Precision(name="precision"),
@@ -52,12 +54,12 @@ def classification_metrics():
     ]
 
 
-def save_run_metadata(out_dir: Path, args, extra=None):
+def save_run_metadata(out_dir, args, extra=None):
     meta = {
         "timestamp": time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime()),
         "args": vars(args),
         "tf_version": tf.__version__,
-        "cuda_visible": os.environ.get("CUDA_VISIBLE_DEVICES", None)
+        "cuda_visible": os.environ.get("CUDA_VISIBLE_DEVICES")
     }
     if extra:
         meta.update(extra)
@@ -70,7 +72,6 @@ def main(args):
     out_dir = Path(args.output_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    # Datasets
     train_ds, train_meta = build_dataset(
         args.train_manifest,
         images_root=args.images_root,
@@ -89,75 +90,53 @@ def main(args):
         repeat=False
     )
 
-    num_classes = train_meta["num_classes"]
-    logging.info("Dataset meta: train=%s val=%s", train_meta, val_meta)
-
-    # Model
-    model, loss = build_simple_cnn(
-        input_shape=(args.image_size, args.image_size, 1),
-        num_classes=num_classes
+    model = build_densenet121(
+        input_shape=(args.image_size, args.image_size, 3),
+        num_classes=train_meta["num_classes"],
+        fine_tune=args.fine_tune
     )
 
     model.compile(
-        optimizer=tf.keras.optimizers.Adam(learning_rate=args.learning_rate),
-        loss=loss,
+        optimizer=tf.keras.optimizers.Adam(args.learning_rate),
+        loss="binary_crossentropy",
         metrics=classification_metrics()
     )
 
-    # Callbacks
+    if args.resume_checkpoint:
+        logging.info("Loading checkpoint: %s", args.resume_checkpoint)
+        model.load_weights(args.resume_checkpoint)
+
     ckpt_cb = tf.keras.callbacks.ModelCheckpoint(
-        filepath=str(out_dir / "model.h5"),
+        str(out_dir / "model.h5"),
         monitor="val_auc_roc",
         mode="max",
         save_best_only=True,
         verbose=1
     )
 
-    tb_cb = tf.keras.callbacks.TensorBoard(log_dir=str(out_dir / "logs"))
-
     es_cb = tf.keras.callbacks.EarlyStopping(
         monitor="val_auc_roc",
         mode="max",
         patience=5,
-        restore_best_weights=True,
-        verbose=1
+        restore_best_weights=True
     )
 
-    steps_per_epoch = max(1, train_meta["num_examples"] // args.batch_size)
-    validation_steps = max(1, val_meta["num_examples"] // args.batch_size)
+    steps_per_epoch = train_meta["num_examples"] // args.batch_size
+    val_steps = val_meta["num_examples"] // args.batch_size
 
-    # Resume if provided
-    if args.resume_checkpoint and Path(args.resume_checkpoint).exists():
-        logging.info("Resuming from checkpoint: %s", args.resume_checkpoint)
-        model.load_weights(args.resume_checkpoint)
+    save_run_metadata(out_dir, args)
 
-    save_run_metadata(
-        out_dir,
-        args,
-        extra={
-            "num_train": train_meta["num_examples"],
-            "num_val": val_meta["num_examples"],
-            "num_classes": num_classes
-        }
-    )
-
-    # Train
     history = model.fit(
         train_ds,
         epochs=args.epochs,
         steps_per_epoch=steps_per_epoch,
         validation_data=val_ds,
-        validation_steps=validation_steps,
-        callbacks=[ckpt_cb, tb_cb, es_cb]
+        validation_steps=val_steps,
+        callbacks=[ckpt_cb, es_cb]
     )
 
-    # Save final metrics (includes val_auc_roc & val_auc_pr)
-    final_metrics = {k: float(v[-1]) for k, v in history.history.items()}
-
     with open(out_dir / "metrics.json", "w") as f:
-        json.dump(final_metrics, f, indent=2)
-
-    logging.info("Training finished. Artifacts saved to %s", out_dir)
+        json.dump({k: float(v[-1]) for k, v in history.history.items()}, f, indent=2)
 
 
 if __name__ == "__main__":
@@ -167,9 +146,10 @@ if __name__ == "__main__":
     parser.add_argument("--images_root", required=True)
     parser.add_argument("--output_dir", required=True)
     parser.add_argument("--epochs", type=int, default=10)
-    parser.add_argument("--batch_size", type=int, default=16)
+    parser.add_argument("--batch_size", type=int, default=32)
     parser.add_argument("--image_size", type=int, default=224)
     parser.add_argument("--learning_rate", type=float, default=1e-4)
     parser.add_argument("--resume_checkpoint", default=None)
+    parser.add_argument("--fine_tune", action="store_true")
     args = parser.parse_args()
     main(args)

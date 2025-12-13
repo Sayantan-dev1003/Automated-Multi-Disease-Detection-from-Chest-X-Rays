@@ -30,7 +30,7 @@ def _parse_pipe_labels(series, label_names=None):
     return arr, label_names
 
 
-def preprocess_image_bytes(image_bytes, image_size=(224, 224), channels=1):
+def preprocess_image_bytes(image_bytes, image_size=(224, 224), channels=3):
     img = tf.io.decode_image(image_bytes, channels=channels, expand_animations=False)
     img = tf.image.convert_image_dtype(img, tf.float32)
     img = tf.image.resize(img, image_size)
@@ -75,7 +75,7 @@ def build_dataset(manifest_csv, images_root, batch_size=16, image_size=(224, 224
         ds = ds.shuffle(buffer_size=min(len(image_paths), 2000))
     def _load(path, label):
         image_bytes = tf.io.read_file(path)
-        image = preprocess_image_bytes(image_bytes, image_size=image_size, channels=1)
+        image = preprocess_image_bytes(image_bytes, image_size=image_size, channels=3)
         return image, label
     ds = ds.map(_load, num_parallel_calls=tf.data.AUTOTUNE)
     if repeat:
