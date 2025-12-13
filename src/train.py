@@ -38,7 +38,7 @@ def build_densenet121(input_shape, num_classes, fine_tune=False):
 
     inputs = tf.keras.Input(shape=input_shape)
     x = tf.keras.applications.densenet.preprocess_input(inputs)
-    x = base_model(x, training=False)
+    x = base_model(x, training=fine_tune)
     x = tf.keras.layers.GlobalAveragePooling2D()(x)
     x = tf.keras.layers.Dense(512, activation="relu")(x)
     x = tf.keras.layers.Dropout(0.4)(x)
