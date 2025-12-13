@@ -73,6 +73,7 @@ def main(args):
     # Datasets
     train_ds, train_meta = build_dataset(
         args.train_manifest,
+        images_root=args.images_root,
         batch_size=args.batch_size,
         image_size=(args.image_size, args.image_size),
         shuffle=True,
@@ -81,6 +82,7 @@ def main(args):
 
     val_ds, val_meta = build_dataset(
         args.val_manifest,
+        images_root=args.images_root,
         batch_size=args.batch_size,
         image_size=(args.image_size, args.image_size),
         shuffle=False,
@@ -162,6 +164,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--train_manifest", required=True)
     parser.add_argument("--val_manifest", required=True)
+    parser.add_argument("--images_root", required=True)
     parser.add_argument("--output_dir", required=True)
     parser.add_argument("--epochs", type=int, default=10)
     parser.add_argument("--batch_size", type=int, default=16)

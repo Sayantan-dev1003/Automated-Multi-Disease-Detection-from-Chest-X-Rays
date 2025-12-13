@@ -18,8 +18,6 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 
 
 def _parse_pipe_labels(series, label_names=None):
-    # series: pandas Series of pipe-separated labels (strings)
-    # label_names: optional list of all possible label names; if None infer
     all_sets = [set(str(x).split("|")) if str(x) else set() for x in series]
     if label_names is None:
         label_names = sorted({v for s in all_sets for v in s if v and v != 'nan'})
@@ -39,16 +37,16 @@ def preprocess_image_bytes(image_bytes, image_size=(224, 224), channels=1):
     return img
 
 
-def build_dataset(manifest_csv, batch_size=16, image_size=(224, 224), shuffle=True, repeat=False):
+def build_dataset(manifest_csv, images_root, batch_size=16, image_size=(224, 224), shuffle=True, repeat=False):
     manifest_csv = Path(manifest_csv)
     assert manifest_csv.exists(), f"{manifest_csv} not found"
     df = pd.read_csv(manifest_csv)
-    base = manifest_csv.parent
+    images_root = Path(images_root)
 
     if "image_path" not in df.columns:
         raise ValueError("manifest must contain 'image_path' column pointing to images relative to the manifest file")
 
-    image_paths = [str(base / p) for p in df["image_path"].tolist()]
+    image_paths = [str(images_root / p) for p in df["image_path"].tolist()]
 
     # Determine labels
     if "labels" in df.columns:
