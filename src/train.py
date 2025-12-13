@@ -109,7 +109,7 @@ def main(args):
         model.load_weights(args.resume_checkpoint)
 
     ckpt_cb = tf.keras.callbacks.ModelCheckpoint(
-        str(out_dir / "model.h5"),
+        str(out_dir / "model.weights.h5"),
         monitor="val_auc_roc",
         mode="max",
         save_best_only=True,
