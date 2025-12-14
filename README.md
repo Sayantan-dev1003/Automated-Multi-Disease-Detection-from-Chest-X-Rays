@@ -274,11 +274,11 @@ See `data/sample/` for demo images, manifest, and usage.
 ### **Stage 1: Training DenseNet121 (Backbone Frozen)**
 ```bash
 # TRAINING DENSENET121 MODEL - STAGE 1
-!python /kaggle/working/repo/src/train.py \
-  --train_manifest /kaggle/input/chestxray14-manifest-splits/train.csv \
-  --val_manifest /kaggle/input/chestxray14-manifest-splits/val.csv \
-  --images_root /kaggle/input/chestxray14 \
-  --output_dir /kaggle/working/model_stage1 \
+!python src/train.py \
+  --train_manifest /path/to/train.csv \
+  --val_manifest /path/to/val.csv \
+  --images_root /path/to/images_root \
+  --output_dir /path/to/model_stage1 \
   --epochs 5 \
   --batch_size 16 \
   --image_size 192 \
@@ -288,27 +288,27 @@ See `data/sample/` for demo images, manifest, and usage.
 ### **Stage 2: Fine Tuning DenseNet121**
 ```bash
 # FINE TUNING DENSENET121 MODEL - STAGE 2
-!python /kaggle/working/repo/src/train.py \
-  --train_manifest /kaggle/input/chestxray14-manifest-splits/train.csv \
-  --val_manifest /kaggle/input/chestxray14-manifest-splits/val.csv \
-  --images_root /kaggle/input/chestxray14 \
-  --output_dir /kaggle/working/model_stage2 \
+!python src/train.py \
+  --train_manifest /path/to/train.csv \
+  --val_manifest /path/to/val.csv \
+  --images_root /path/to/images_root \
+  --output_dir /path/to/model_stage2 \
   --epochs 6 \
   --batch_size 16 \
   --image_size 192 \
   --learning_rate 1e-5 \
-  --resume_checkpoint /kaggle/input/stage1-metrics/model.weights.h5 \
+  --resume_checkpoint /path/to/model_stage1/model.weights.h5 \
   --fine_tune
 ```
 
 ### **Testing the Final Model**
 ```bash
 # TESTING THE MODEL ON TEST.CSV
-!python /kaggle/working/repo/src/test.py \
-  --test_manifest /kaggle/input/chestxray14-manifest-splits/test.csv \
-  --images_root /kaggle/input/chestxray14 \
-  --weights /kaggle/input/stage2-metrics/model.weights.h5 \
-  --output_dir /kaggle/working/test_results \
+!python src/test.py \
+  --test_manifest /path/to/test.csv \
+  --images_root /path/to/images_root \
+  --weights /path/to/model_stage2/model.weights.h5 \
+  --output_dir /path/to/test_results \
   --batch_size 32 \
   --image_size 192
 ```
