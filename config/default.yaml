@@ -1,11 +1,11 @@
 seed: 42
-image_size: [224,224]
-batch_size: 32
-epochs: 30
+image_size: [192,192]
+batch_size: 16
+epochs: 10
 learning_rate: 1e-4
 model:
   backbone: simple_cnn
-  num_classes: 14      # change to your number of labels
+  num_classes: 14
 data:
   images_root: /kaggle/input/chestxray14/images
   labels_csv: /kaggle/input/multi-disease-detection-from-chest-xray-labels/Data_Entry_2017_v2020.csv

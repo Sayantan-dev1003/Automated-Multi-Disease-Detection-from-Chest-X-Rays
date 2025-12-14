@@ -1,32 +1,78 @@
+# =========================
 # Python
+# =========================
 __pycache__/
 *.pyc
 *.pyo
+*.pyd
 
+# =========================
 # Virtual environments
+# =========================
 venv/
+.venv/
+env/
+ENV/
 .env/
+.env.*
+pipenv/
+poetry.lock
 
-# Data (large files)
-data/raw_images/
+# =========================
+# Jupyter
+# =========================
+.ipynb_checkpoints/
+
+# =========================
+# OS / Editor
+# =========================
+.DS_Store
+.vscode/
+.idea/
+
+# =========================
+# Data (never commit images)
+# =========================
 data/raw/
+data/raw_images/
 data/full/
 datasets/
 *.tfrecord
+*.zip
+*.tar
+*.tar.gz
 
-# Kaggle outputs and large artifacts
-artifacts/
+# =========================
+# Training / model artifacts
+# =========================
+artifacts/*.h5
+artifacts/*.ckpt
+artifacts/*.pt
+artifacts/*.pth
+artifacts/*.onnx
 experiments/
 checkpoints/
+runs/
+logs/
 
-# Jupyter
-.ipynb_checkpoints/
-
-# DVC cache
-.dvc/cache/
-
-# Model weights
+# =========================
+# Model weights (always ignore)
+# =========================
 *.h5
 *.ckpt
-*.pth
 *.pt
+*.pth
+*.onnx
+
+# =========================
+# Kaggle
+# =========================
+kaggle.json
+/kaggle/working/
+/kaggle/input/
+
+# =========================
+# Temporary files
+# =========================
+*.tmp
+*.log
