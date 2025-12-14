@@ -13,8 +13,13 @@ import json
 from pathlib import Path
 import numpy as np
 import tensorflow as tf
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile, File, Query
 from fastapi.responses import JSONResponse
+from gradcam import (
+    make_gradcam_heatmaps,
+    overlay_heatmap_on_image,
+    encode_image_to_base64
+)
 
 # Paths
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -76,7 +81,10 @@ def health():
 
 # Prediction endpoint
 @app.post("/predict")
-async def predict(file: UploadFile = File(...)):
+async def predict(
+    file: UploadFile = File(...),
+    explain: bool = Query(False, description="Generate Grad-CAM visualizations")
+):
     image_bytes = await file.read()
     img = preprocess_image_bytes(image_bytes)
 
@@ -85,6 +93,7 @@ async def predict(file: UploadFile = File(...)):
 
     detected = [
         {
+            "index": i,
             "disease": LABEL_NAMES[i],
             "probability": float(preds[i])
         }
@@ -98,9 +107,36 @@ async def predict(file: UploadFile = File(...)):
         reverse=True
     )
 
-    return JSONResponse({
+    response = {
         "filename": file.filename,
         "threshold": THRESHOLD,
         "num_detected": len(detected),
-        "detections": detected
-    })
+        "detections": [
+            {
+                "disease": d["disease"],
+                "probability": d["probability"]
+            }
+            for d in detected
+        ]
+    }
+
+    if explain and detected:
+        class_indices = [d["index"] for d in detected]
+
+        heatmaps = make_gradcam_heatmaps(
+            model,
+            img,
+            class_indices=class_indices
+        )
+
+        gradcam_results = {}
+
+        for d in detected:
+            heatmap = heatmaps.get(d["index"])
+            if heatmap is not None:
+                overlay = overlay_heatmap_on_image(img.numpy(), heatmap)
+                gradcam_results[d["disease"]] = encode_image_to_base64(overlay)
+
+        response["gradcam"] = gradcam_results
+
+    return JSONResponse(response)

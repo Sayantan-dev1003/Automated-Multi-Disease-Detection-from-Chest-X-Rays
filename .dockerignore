@@ -1,0 +1,58 @@
+# ===============================
+# Python cache & compiled files
+# ===============================
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# ===============================
+# Virtual environments & env files
+# ===============================
+venv/
+.env
+.env.*
+
+# ===============================
+# Git files
+# ===============================
+.git/
+.gitignore
+
+# ===============================
+# Data & datasets (large / private)
+# ===============================
+data/
+datasets/
+*.csv
+
+# ===============================
+# Notebooks & experiments
+# ===============================
+notebooks/
+*.ipynb
+
+# ===============================
+# OS & editor files
+# ===============================
+.DS_Store
+Thumbs.db
+
+# ===============================
+# Logs & temp files
+# ===============================
+*.log
+tmp/
+temp/
+
+# ===============================
+# Documentation
+# ===============================
+README.md
+
+# ===============================
+# Model training artifacts (optional)
+# ===============================
+artifacts/*.ckpt
+artifacts/*.pth
+artifacts/*.pt

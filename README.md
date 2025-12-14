@@ -48,6 +48,7 @@ Millions of chest X-rays are performed globally, but radiologist availability is
 | 🔒 _Patient-wise Data Split Utility_         | Prevents data leakage during training/validation                           |
 | 🗄️ _Sampleizable & Extensible Data Loaders_  | tf.data pipelines for robust, fast loading and augmentation                |
 | 🏥 _Interpretability_                        | Directly output interpretable per-disease probabilities                    |
+| 🟣 _Grad-CAM Visualization_                  | On-demand multi-class explainability via API (`/predict?explain=1`)         |
 
 ---
 
@@ -62,6 +63,81 @@ The model outputs **independent probabilities (sigmoid)** for each disease.
 | `≥ 0.5`           | High confidence disease presence               |
 
 > **Note:** This AI tool is for **screening and decision support only**—NOT for clinical diagnosis. Always confirm findings with a qualified radiologist.
+
+---
+
+## 📗 Model Evaluation & Metrics
+
+The model was evaluated on held-out **validation** and **test** datasets using standard metrics for multi-label medical image classification.  
+These metrics assess both the **probabilistic quality** of predictions and their **clinical usefulness** in screening scenarios.
+
+---
+
+### Overall Performance
+
+**Validation Metrics**
+- **ROC–AUC (Macro):** 0.8624  
+- **Precision:** 0.6876  
+- **Recall (Sensitivity):** 0.2661  
+- **Loss:** 0.2044  
+
+**Test Metrics**
+- **ROC–AUC (Macro):** 0.8629  
+- **Precision:** 0.7023  
+- **Recall (Sensitivity):** 0.2917  
+- **Loss:** 0.1995  
+
+The close alignment between validation and test performance indicates **stable learning behavior and good generalization**, with no significant signs of overfitting.
+
+---
+
+### ROC–AUC Analysis
+
+ROC–AUC is treated as the **primary evaluation metric** for this task due to its suitability for medical imaging problems:
+
+- It is **threshold-independent**, evaluating ranking quality rather than hard decisions  
+- It is **robust to class imbalance**, which is common in chest X-ray datasets  
+- It reflects the model’s ability to separate diseased from non-diseased cases across all classes  
+
+A macro ROC–AUC of approximately **0.86** demonstrates strong discriminative capability across multiple thoracic disease categories, which is considered a solid performance for large-scale multi-label chest X-ray classification.
+
+---
+
+### Precision–Recall Trade-off
+
+At the default decision threshold of **0.5**, the model exhibits **higher precision than recall**, indicating a conservative prediction behavior:
+
+- **High precision** reduces false-positive alerts  
+- **Lower recall** implies some subtle or early-stage pathologies may be missed  
+
+Given the screening-oriented nature of this system, inference is performed using a **lower probability threshold of 0.35**, which increases sensitivity (recall) while maintaining acceptable precision. This adjustment aligns the model’s behavior with real-world screening requirements, where missing a pathology carries greater clinical risk than generating a false alert.
+
+---
+
+### Confusion Matrix (Conceptual Explanation)
+
+In a multi-label classification setting, confusion matrices are computed **independently for each disease class**, rather than as a single aggregated matrix.
+
+For each disease, predictions fall into four categories:
+
+- **True Positive (TP):** Disease correctly identified  
+- **False Positive (FP):** Disease predicted but not present  
+- **False Negative (FN):** Disease present but missed (most critical error in screening)  
+- **True Negative (TN):** Correctly predicted absence of disease  
+
+From a clinical perspective, **false negatives are prioritized for minimization**, as undetected pathologies pose higher risk than false alarms. This directly motivates the use of a lower inference threshold.
+
+---
+
+### Clinical Interpretation & Limitations
+
+This system is designed as a **screening and decision-support tool**, not a diagnostic system.  
+Predictions with moderate confidence are intended to **flag cases for expert radiological review**, rather than provide definitive medical conclusions.
+
+All outputs should be interpreted in conjunction with:
+- Clinical history  
+- Radiologist expertise  
+- Additional diagnostic tests
 
 ---
 
@@ -200,26 +276,30 @@ Response:
 
 **2. Prediction Endpoint**  
 `POST /predict` (multipart/form-data, field: `file`)
+- Optional explainability: Add `?explain=1` to obtain Grad-CAM heatmaps for all detected diseases.
 
 Sample cURL:
 ```bash
-curl -X POST "http://localhost:8000/predict" \
+curl -X POST "http://localhost:8000/predict?explain=1" \
     -H "accept: application/json" \
     -H "Content-Type: multipart/form-data" \
     -F "file=@/path/to/chest.png"
 ```
 
-Swagger UI also enables interactive file upload testing!
+Swagger UI also enables interactive file upload/testing! If `explain=1` is added, the JSON response will include base64-encoded Grad-CAM heatmaps for each detected disease class, suitable for direct browser display or further analysis.
 
-Sample response:
+Sample response (
+with explanation):
 ```json
 {
   "filename": "chest.png",
   "threshold": 0.3,
   "num_detected": 2,
   "detections": [
-    {"disease": "Infiltration", "probability": 0.83},
-    {"disease": "Atelectasis", "probability": 0.56}
+    {"disease": "Infiltration", "probability": 0.83,
+     "grad_cam": "data:image/png;base64,iVBORw0KGg..."},
+    {"disease": "Atelectasis", "probability": 0.56,
+     "grad_cam": "data:image/png;base64,iVBORw0KGg..."}
   ]
 }
 ```
@@ -237,6 +317,18 @@ Sample response:
 
 **Clinical Rationale:**  
 Screening tools must minimize false negatives. A lower threshold identifies subtle or early abnormalities, but results should be correlated with expert radiology review.
+
+---
+
+## 🔍 Model Interpretability with Multi-Class Grad-CAM
+
+This API supports **on-demand multi-class Grad-CAM visualization** for all detected thoracic disease categories. Simply set the `explain` query parameter when calling `/predict`:
+
+- If `?explain=1` is provided, each detected class in the response includes a Grad-CAM heatmap.
+- Heatmaps are returned as base64 PNGs for immediate GUI/app display.
+- Helps clinicians, researchers, and developers interpret which image regions most influenced each prediction.
+
+> **Note:** Grad-CAM maps are for research/interpretation only—not a diagnostic. Always corroborate with radiologist review.
 
 ---
 
@@ -341,11 +433,35 @@ If you lack a local GPU:
 
 ---
 
+## 🐳 Deploying with Docker
+
+Containerization with Docker is supported to simplify runtime environments, accelerate deployment, and ensure reproducibility across diverse systems (including cloud and on-premise).
+
+### **Build and Run Docker Image**
+
+Assuming you have Docker installed:
+
+```bash
+docker build -t chest-xray-api .
+docker run -d -p 8000:8000 chest-xray-api
+```
+
+- The API will now be available at [http://localhost:8000](http://localhost:8000).
+- Edit or extend the provided `Dockerfile` as necessary for GPU or production deployment.
+
+**Key Benefits:**
+- Fully portable—runs identically anywhere Docker is supported
+- Encapsulates all dependencies
+- Facilitates cloud/serverless deployment and CI/CD pipelines
+
+---
+
 ## ⚠️ Disclaimer
 
 - This software is intended **solely for research and screening/decision support purposes**.
 - It is **not a substitute for professional medical diagnosis** or a replacement for a board-certified radiologist.
 - Users are responsible for interpreting results with appropriate clinical context.
+- Grad-CAM visualizations are provided for interpretability purposes only and should not be used as a diagnostic tool.
 
 ---
 

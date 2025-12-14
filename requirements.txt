@@ -8,3 +8,4 @@ uvicorn[standard]==0.30.1
 python-multipart==0.0.9
 tqdm==4.66.4
 pyyaml==6.0.1
+opencv-python-headless==4.9.0.80

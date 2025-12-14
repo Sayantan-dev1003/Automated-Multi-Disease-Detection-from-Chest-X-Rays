@@ -1,15 +1,37 @@
 seed: 42
-image_size: [192,192]
+
+image_size: [192, 192]
 batch_size: 16
 epochs: 10
 learning_rate: 1e-4
+
 model:
-  backbone: simple_cnn
-  num_classes: 14
+  backbone: densenet121
+  pretrained: imagenet
+  num_classes: 15
+  fine_tune: false
+  dropout_rate: 0.4
+
 data:
   images_root: /kaggle/input/chestxray14/images
   labels_csv: /kaggle/input/multi-disease-detection-from-chest-xray-labels/Data_Entry_2017_v2020.csv
+  num_workers: 4
+  shuffle: true
+
 paths:
   manifest: /kaggle/working/manifest.csv
   splits_dir: /kaggle/working/splits
-  output_dir: /kaggle/working/model_run_full
+  output_dir: /kaggle/working/model_run
+
+evaluation:
+  metrics:
+    - roc_auc
+    - precision
+    - recall
+    - f1
+  threshold: 0.3
+
+logging:
+  save_best_on: val_roc_auc
+  log_interval: 50
+  save_checkpoints: true
