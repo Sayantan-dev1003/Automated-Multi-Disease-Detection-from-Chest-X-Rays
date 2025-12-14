@@ -75,17 +75,12 @@ These metrics assess both the **probabilistic quality** of predictions and their
 
 ### Overall Performance
 
-**Validation Metrics**
-- **ROC–AUC (Macro):** 0.8624  
-- **Precision:** 0.6876  
-- **Recall (Sensitivity):** 0.2661  
-- **Loss:** 0.2044  
-
-**Test Metrics**
-- **ROC–AUC (Macro):** 0.8629  
-- **Precision:** 0.7023  
-- **Recall (Sensitivity):** 0.2917  
-- **Loss:** 0.1995  
+| Metric                     | Validation | Test   |
+|----------------------------|------------|--------|
+| **ROC–AUC (Macro)**        | 0.8624     | 0.8629 |
+| **Precision**              | 0.6876     | 0.7023 |
+| **Recall (Sensitivity)**   | 0.2661     | 0.2917 |
+| **Loss**                   | 0.2044     | 0.1995 |  
 
 The close alignment between validation and test performance indicates **stable learning behavior and good generalization**, with no significant signs of overfitting.
 
