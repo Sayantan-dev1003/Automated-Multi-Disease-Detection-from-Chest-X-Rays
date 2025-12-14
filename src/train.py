@@ -150,7 +150,7 @@ if __name__ == "__main__":
     parser.add_argument("--output_dir", required=True)
     parser.add_argument("--epochs", type=int, default=10)
     parser.add_argument("--batch_size", type=int, default=32)
-    parser.add_argument("--image_size", type=int, default=224)
+    parser.add_argument("--image_size", type=int, default=192)
     parser.add_argument("--learning_rate", type=float, default=1e-4)
     parser.add_argument("--resume_checkpoint", default=None)
     parser.add_argument("--fine_tune", action="store_true")

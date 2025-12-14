@@ -30,14 +30,14 @@ def _parse_pipe_labels(series, label_names=None):
     return arr, label_names
 
 
-def preprocess_image_bytes(image_bytes, image_size=(224, 224), channels=3):
+def preprocess_image_bytes(image_bytes, image_size=(192, 192), channels=3):
     img = tf.io.decode_image(image_bytes, channels=channels, expand_animations=False)
     img = tf.image.convert_image_dtype(img, tf.float32)
     img = tf.image.resize(img, image_size)
     return img
 
 
-def build_dataset(manifest_csv, images_root, batch_size=16, image_size=(224, 224), shuffle=True, repeat=False):
+def build_dataset(manifest_csv, images_root, batch_size=16, image_size=(192, 192), shuffle=True, repeat=False):
     manifest_csv = Path(manifest_csv)
     assert manifest_csv.exists(), f"{manifest_csv} not found"
     df = pd.read_csv(manifest_csv)
@@ -90,7 +90,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--manifest", required=True)
     parser.add_argument("--batch_size", type=int, default=8)
-    parser.add_argument("--image_size", type=int, nargs=2, default=(224, 224))
+    parser.add_argument("--image_size", type=int, nargs=2, default=(192, 192))
     args = parser.parse_args()
     ds, meta = build_dataset(args.manifest, batch_size=args.batch_size, image_size=tuple(args.image_size))
     logging.info("Dataset built: %s", meta)
