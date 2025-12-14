@@ -1,112 +1,281 @@
 # Automated Multi-Disease Detection from Chest X-Rays
 
-![Python](https://img.shields.io/badge/Python-3.9%2B-blue)
+![Python](https://img.shields.io/badge/Python-3.11%2B-blue)
 ![TensorFlow](https://img.shields.io/badge/TensorFlow-2.x-orange)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.111-green)
 ![License](https://img.shields.io/badge/License-MIT-lightgrey)
 
-A production-grade deep learning solution for automated detection of 14 thoracic diseases from chest X-ray images. This project leverages **DenseNet121**, a state-of-the-art convolutional neural network, to perform multi-label classification, identifying pathologies such as Pneumonia, Effusion, and Infiltration with high precision.
+---
 
-The system is designed for end-to-end usage, featuring a robust training pipeline, comprehensive evaluation scripts, a CLI for batch inference, and a high-performance **FastAPI** service for real-time deployment.
+## 🩺 Detailed Description
+
+Automated Multi-Disease Detection from Chest X-Rays is a robust, production-grade deep learning pipeline that detects 14 common thoracic diseases directly from chest radiographs (CXR). Designed for both researchers and engineers, the solution leverages a powerful DenseNet121 backbone—pretrained on ImageNet—for state-of-the-art performance on real-world clinical data.
+
+#### The system supports:
+- **Training** and **fine-tuning** with scalable data pipelines
+- Extensive **evaluation metrics**
+- High-speed **batch/CLI inference**
+- Easy-to-deploy **FastAPI** for real-time and remote predictions
 
 ---
 
-## 🌟 Key Features
+## 🩻 Problem Statement
 
-*   **Advanced Model Architecture**: Uses `DenseNet121` pretrained on ImageNet and fine-tuned for medical imaging domain.
-*   **Multi-Label Classification**: Simultaneously detects up to 14 distinct chest pathologies.
-*   **Optimized Data Pipeline**: Implements `tf.data` for high-performance, asynchronous data loading and preprocessing.
-*   **Production Inference**:
-    *   **REST API**: Built with FastAPI for low-latency real-time prediction.
-    *   **CLI Tool**: Script for batch processing of local image directories.
-*   **Comprehensive Metrics**: Tracks AUC-ROC, AUC-PR, Precision, Recall, and Accuracy during training and evaluation.
-*   **Configurable**: Easy-to-adjust hyperparameters via YAML configuration or command-line arguments.
+Millions of chest X-rays are performed globally, but radiologist availability is limited, resulting in delays and missed pathologies. There is a critical need for automated, scalable, and accurate multi-disease analysis from CXR images to support radiologists and improve clinical outcomes through AI-powered screening.
 
 ---
 
-## 📂 Project Structure
+## 🎯 Key Objectives
+
+1. **Accurate Detection**: Simultaneous multi-label classification of 14 thoracic diseases.
+2. **Production-Ready**: Provide deployment pipelines (API, CLI) suitable for hospitals and cloud inference.
+3. **Easy Customization**: Enable users to quickly adapt/configure for new datasets.
+4. **Medical Interpretability**: Output actionable, interpretable probability scores for each disease.
+5. **Open Source**: Foster research and real-world adoption through transparent, reproducible practices.
+
+---
+
+## ✨ Key Features (1-liners)
+
+| Feature                                      | Description                                                                |
+|----------------------------------------------|----------------------------------------------------------------------------|
+| 🚀 _Transfer Learning (DenseNet121)_         | State-of-the-art pretrained model for high accuracy                        |
+| 🏷️  _Multi-label Output_                     | Predict all 14 NIH ChestX-ray pathologies per image                        |
+| ⚡ _FastAPI Real-time Service_               | Instant, RESTful API for hospital/remote deployment                        |
+| 🖥️  _Batch CLI Tool_                         | Inference on entire directories or single images                           |
+| 📈 _Advanced Metrics & Logging_              | ROC, PR, accuracy, precision/recall metrics tracked per epoch              |
+| ⚙️ _Configurable via YAML/CLI_               | Adjust image size, batch size, learning rate, and more easily              |
+| 🔒 _Patient-wise Data Split Utility_         | Prevents data leakage during training/validation                           |
+| 🗄️ _Sampleizable & Extensible Data Loaders_  | tf.data pipelines for robust, fast loading and augmentation                |
+| 🏥 _Interpretability_                        | Directly output interpretable per-disease probabilities                    |
+
+---
+
+## 🧑‍⚕️ Medical Interpretation Strategy
+
+The model outputs **independent probabilities (sigmoid)** for each disease.
+
+| Probability Range | Interpretation                                 |
+|-------------------|------------------------------------------------|
+| `< 0.3`           | Likely normal / disease unlikely               |
+| `0.3 – 0.5`       | Suspicious / possible early-stage abnormality  |
+| `≥ 0.5`           | High confidence disease presence               |
+
+> **Note:** This AI tool is for **screening and decision support only**—NOT for clinical diagnosis. Always confirm findings with a qualified radiologist.
+
+---
+
+## 🏗️ System Architecture
+
+```text
++---------------------+
+|  Input  (PNG, JPG)  |
++----------+----------+
+           |
+           v
++------------------------------+
+|  tf.data Preprocessing       |
+|  Resize, Normalize, Augment  |
++------------------------------+
+           |
+           v
++------------------------------+
+|     DenseNet121 Backbone     |
+| (Pretrained, fine-tunable)   |
++------------------------------+
+           |
+           v
+| → GlobalAvgPool2D → Dense(512, ReLU) → Dropout(0.4) → Dense(14, Sigmoid)
+|
++------------------------------+
+|      Output Probabilities    |
+|  (0–1 for each pathology)    |
++------------------------------+
+           |
+           v
++------------------------------+
+|   Decision Support Layer     |
+| (Threshold-based reporting,  |
+|  JSON output, REST API, etc) |
++------------------------------+
+```
+
+---
+
+## 📂 Project Repository Structure (Full)
 
 ```text
 .
-├── artifacts/             # Storage for trained model checkpoints and label maps
-├── config/                # Configuration files (e.g., hyperparameters)
-├── data/                  # Layout for dataset storage
-├── src/                   # Core source code
-│   ├── app.py             # FastAPI application for model serving
-│   ├── data_pipeline.py   # TensorFlow data loading and augmentation pipeline
-│   ├── infer.py           # Command-line interface for inference
-│   ├── test.py            # Evaluation script for testing model performance
-│   └── train.py           # Main training loop with mixed-precision support
-├── Dockerfile             # Container configuration (template)
-├── requirements.txt       # Python dependency dependencies
-└── README.md              # Project documentation
+├── artifacts/                           # Model weights, label maps, metrics, run logs
+│   ├── final_model.weights.h5           # Main trained weights (Keras)
+│   └── label_map.json                   # List of disease classes
+├── config/
+│   └── default.yaml                     # Default experiment/training configuration
+├── data/
+│   └── sample/
+│       ├── images/                      # Tiny sample images for testing
+│       ├── sample_manifest.csv          # Example manifest
+│       └── README.md                    # Sample data usage guidelines
+├── src/
+│   ├── app.py                           # FastAPI inference application (real-time)
+│   ├── infer.py                         # Command line inference tool (batch/single)
+│   ├── test.py                          # Model evaluation (testing) script
+│   ├── train.py                         # End-to-end multi-label training loop
+│   ├── data_pipeline.py                 # tf.data loading and augmentation utilities
+│   └── data/
+│       ├── build_manifest.py            # Build manifest from NIH/open datasets
+│       ├── make_splits.py               # Patient-wise train/val/test splitting
+│       └── preview.py                   # CSV preview/sanity checker
+├── Dockerfile                           # (Optional) Container config
+├── requirements.txt                     # All core Python dependencies
+└── README.md                            # You are here
 ```
 
 ---
 
-## 🚀 Getting Started
+## ⚡️ Getting Started
 
 ### Prerequisites
 
-*   **Python 3.11+**
-*   **CUDA-compatible GPU** (Highly recommended for training)
+- Python **3.11+**
+- TensorFlow **2.x** (see `requirements.txt`)
+- FastAPI, Uvicorn, Pandas, NumPy, Scikit-Learn, etc.
+- CUDA-compatible GPU **(recommended for training)**
+- NIH Chest X-ray 14 Dataset (official [download](https://nihcc.app.box.com/v/ChestXray-NIHCC))
 
-### Installation
-
-1.  **Clone the repository**:
-    ```bash
-    git clone https://github.com/yourusername/chest-xray-detection.git
-    cd "Automated Multi-Disease Detection from Chest X-Rays"
-    ```
-
-2.  **Create and activate a virtual environment**:
-    ```bash
-    # Linux/MacOS
-    python3 -m venv venv
-    source venv/bin/activate
-
-    # Windows
-    python -m venv venv
-    venv\Scripts\activate
-    ```
-
-3.  **Install dependencies**:
-    ```bash
-    pip install -r requirements.txt
-    ```
-
-4. **Running the API**:
-    ```bash
-    uvicorn src.app:app --reload
-    ```
 ---
 
-## 📊 Data Preparation
+### 🛠️ Installation & Environment Setup
 
-This project expects a CSV manifest file for training and validation. The CSV can follow the **NIH Chest X-ray 14** format or a custom format.
+#### 1. Clone the repository
 
-**Required Columns:**
-*   `image_path`: Relative path to the image file (e.g., `images/00000001_000.png`).
-*   **Labels**:
-    *   Option A: A `labels` column containing pipe-separated strings (e.g., `Infiltration|Pneumonia`).
-    *   Option B: Separate binary columns for each disease (0/1).
+```bash
+git clone https://github.com/Sayantan-dev1003/Automated-Multi-Disease-Detection-from-Chest-X-Rays.git
+cd "Automated Multi-Disease Detection from Chest X-Rays"
+```
 
-**Example CSV (`train.csv`):**
-```csv
-image_path,labels
-images/patient001.png,No Finding
-images/patient002.png,Effusion|Atelectasis
-images/patient003.png,Pneumonia
+#### 2. Create & activate a virtual environment
+
+**Linux/MacOS:**
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
+
+**Windows:**
+
+```cmd
+python -m venv venv
+venv\Scripts\activate
+```
+
+#### 3. Install dependencies
+
+```bash
+pip install -r requirements.txt
 ```
 
 ---
 
-## 🛠️ Usage
+### 🚀 Running the API Server
 
-### 1. Training
+```bash
+uvicorn src.app:app --host 0.0.0.0 --port 8000
+```
 
-Train the model from scratch or fine-tune an existing checkpoint.
+- The server will start at: http://localhost:8000
 
+#### API Usage
+
+- **Swagger UI:** [http://localhost:8000/docs](http://localhost:8000/docs)
+- **Redoc:** [http://localhost:8000/redoc](http://localhost:8000/redoc)
+
+**1. Health Check**  
+`GET /`
+
+Response:
+```json
+{
+  "status": "ok",
+  "model_loaded": true
+}
+```
+
+**2. Prediction Endpoint**  
+`POST /predict` (multipart/form-data, field: `file`)
+
+Sample cURL:
+```bash
+curl -X POST "http://localhost:8000/predict" \
+    -H "accept: application/json" \
+    -H "Content-Type: multipart/form-data" \
+    -F "file=@/path/to/chest.png"
+```
+
+Swagger UI also enables interactive file upload testing!
+
+Sample response:
+```json
+{
+  "filename": "chest.png",
+  "threshold": 0.3,
+  "num_detected": 2,
+  "detections": [
+    {"disease": "Infiltration", "probability": 0.83},
+    {"disease": "Atelectasis", "probability": 0.56}
+  ]
+}
+```
+
+---
+
+## 🧮 Threshold Design Choice
+
+- The default decision threshold for reporting a disease is **0.3** (sigmoid output).
+- This value is chosen for high sensitivity in screening settings, lowering missed cases.
+- For probabilities:
+    - `< 0.3`: Normal/low risk; very unlikely presence of disease
+    - `0.3–0.5`: Suspicious or borderline; early/intermediate risk
+    - `≥ 0.5`: High confidence/strong disease evidence
+
+**Clinical Rationale:**  
+Screening tools must minimize false negatives. A lower threshold identifies subtle or early abnormalities, but results should be correlated with expert radiology review.
+
+---
+
+## 🧠 Complete Model Details
+
+- **Backbone:** DenseNet121 (ImageNet pre-trained, optionally fine-tuned)
+- **Input:** 192×192 RGB images (configurable)
+- **Preprocessing:** tf.data pipeline, normalization, augmentation
+- **Head:** GlobalAvgPool2D → Dense(512, ReLU) → Dropout(0.4) → Dense(14, Sigmoid)
+- **Loss:** Binary cross-entropy (multi-label)
+- **Metrics:** AUC-ROC, AUC-PR, accuracy, precision, recall
+- **Checkpoints:** Saved during training by validation AUC-ROC
+
+---
+
+## 🏥 Training & Data Preparation
+
+- Recommended to use the **NIH ChestXray14 Dataset**. Download from [official source](https://nihcc.app.box.com/v/ChestXray-NIHCC).
+- If no local GPU, use **Kaggle Notebooks** or similar cloud GPU platforms.
+
+### **Build Manifest & Data Splits**
+```bash
+python src/data/build_manifest.py --labels_csv /path/to/labels.csv --images_root /path/to/images/ --out data/manifest.csv
+
+python src/data/make_splits.py --manifest data/manifest.csv --out_dir data/splits --test_size 0.15 --val_size 0.10
+```
+
+### **Sample data available:**  
+See `data/sample/` for demo images, manifest, and usage.
+
+---
+
+## 🏃‍♂️ Training, Testing, Inference (CLI)
+
+**Train:**
 ```bash
 python src/train.py \
     --images_root /path/to/dataset/root \
@@ -118,15 +287,7 @@ python src/train.py \
     --epochs 10
 ```
 
-**Key Arguments:**
-*   `--fine_tune`: Unfreezes the top layers of the base model for fine-tuning.
-*   `--resume_checkpoint`: Path to a `.h5` file to resume training.
-*   `--learning_rate`: Set the initial learning rate (default: `1e-4`).
-
-### 2. Evaluation
-
-Evaluate a trained model on a held-out test set.
-
+**Test:**
 ```bash
 python src/test.py \
     --images_root /path/to/dataset/root \
@@ -135,13 +296,8 @@ python src/test.py \
     --output_dir ./artifacts/run_01 \
     --batch_size 32
 ```
-*Results including Accuracy, AUC-ROC, and Precision/Recall will be saved to `test_metrics.json`.*
 
-### 3. Inference
-
-#### 🖥️ CLI (Batch Processing)
-Run predictions on a single image or an entire folder of images.
-
+**CLI Inference:**
 ```bash
 python src/infer.py \
     --input ./data/sample_xray.png \
@@ -149,48 +305,38 @@ python src/infer.py \
     --labels ./artifacts/run_01/run_metadata.json \
     --output_json predictions.json
 ```
-*(Note: Ensure you provide the correct label mapping JSON usually generated during training or stored in artifacts).*
-
-#### 🌐 REST API (Real-time)
-Start the FastAPI server for HTTP-based inference.
-
-```bash
-uvicorn src.app:app --host 0.0.0.0 --port 8000
-```
-
-**Test the API:**
-
-*   **Health Check**: `GET /`
-*   **Predict**: `POST /predict`
-
-**Example cURL:**
-```bash
-curl -X POST "http://localhost:8000/predict" \
-     -H "accept: application/json" \
-     -H "Content-Type: multipart/form-data" \
-     -F "file=@/path/to/chest.png"
-```
 
 ---
 
-## 🧠 Model Architecture
+## 📁 Refer to Data Folder
 
-The solution is built on a robust deep learning foundation:
+- `data/sample/images/`: Demo images for testing
+- `data/sample/sample_manifest.csv`: Example manifest format (image_path, labels)
+- Use provided Python scripts in `src/data/` for manifest building, preview, and splitting
 
-1.  **Backbone**: **DenseNet121**
-    *   Selected for its parameter efficiency and strong feature propagation.
-    *   Pretrained on ImageNet to leverage transfer learning.
-2.  **Preprocessing**:
-    *   Resize to **192x192** (Configurable).
-    *   Normalization to [0,1].
-3.  **Classification Head**:
-    *   Global Average Pooling 2D.
-    *   Dense Layer (512 units, ReLU).
-    *   Dropout (0.4) for regularization.
-    *   Output Layer (Sigmoid activation) for multi-label probability generation.
+---
+
+## ⭐ Suggestions for Kaggle
+
+If you lack a local GPU:
+- Use **Kaggle Notebooks** for free GPU acceleration.
+- Upload the NIH dataset and run the code and scripts exactly as above.
+- Adjust `config/default.yaml` for Kaggle paths (see sample).
+
+---
+
+## ⚠️ Disclaimer
+
+- This software is intended **solely for research and screening/decision support purposes**.
+- It is **not a substitute for professional medical diagnosis** or a replacement for a board-certified radiologist.
+- Users are responsible for interpreting results with appropriate clinical context.
 
 ---
 
 ## 📄 License
 
-This project is open-sourced under the MIT License. See the `LICENSE` file for details.
+This project is distributed under the terms of the MIT License. See the `LICENSE` file for full details.
+
+---
+
+**For questions, contributions, or collaboration, please open an issue or pull request.**
